@@ -9,6 +9,7 @@ UIP_TCP=0
 SMALL=1
 CFLAGS+=-DWOLFSSL_USER_SETTINGS -I. -DUIP_CONF_ND6_SEND_NS=1 -DUIP_CONF_ND6_SEND_NA=1 \
 		-I../wolfBoot/include -I../wolfBoot/lib/bootutil/include \
+		-I$(CONTIKI)/apps/wolfssl/wolfssl \
 		-DWOLFBOOT_OVERWRITE_ONLY
 
 CONTIKI_PROJECT=dtls-ota
