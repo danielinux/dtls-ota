@@ -1,0 +1,69 @@
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.gdb
+
+# automatically generated keys
+*.der
+*.pem
+
+# automatically generated source files
+src/ed25519_pub_key.c
+
+# Vim swap files
+.*.swp
+
+# Contiki patch guard
+.contiki_patched
+
+# Downloaded files
+*.zip
+
+# Third party software
+nrf5x-softdevice
+
+# tags etc.
+cscope.out
+tags
+
+

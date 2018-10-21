@@ -1,0 +1,6 @@
+[submodule "contiki"]
+	path = contiki
+	url = https://github.com/danielinux/contiki
+[submodule "wolfBoot"]
+	path = wolfBoot
+	url = https://github.com/wolfSSL/wolfBoot

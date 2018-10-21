@@ -1,0 +1,45 @@
+NRF52_SDK_ROOT=$(PWD)/nrf5x-softdevice
+CROSS_COMPILE:=arm-none-eabi-
+OBJCOPY:=$(CROSS_COMPILE)objcopy
+JLINK_OPTS = -Device NRF52 -if swd -speed 1000
+DTLS_OTA=$(PWD)/dtls-ota
+BOOT_IMG:=$(DTLS_OTA)/dtls-ota.bin
+BOOT_ELF:=$(DTLS_OTA)/dtls-ota.nrf52dk
+WOLFBOOT:=$(PWD)/wolfBoot
+WOLFBOOT_BIN:=$(WOLFBOOT)/wolfboot.bin
+
+all: $(BOOT_ELF)
+
+.contiki_patched:
+	patch -p0 < contiki-nrf52-softdevice-wolfBoot.patch
+	touch .contiki_patched
+
+$(BOOT_ELF): nrf5_iot_sdk_3288530.zip $(WOLFBOOT_BIN) .contiki_patched
+	make -C $(DTLS_OTA) TARGET=nrf52dk NRF52_SDK_ROOT=$(NRF52_SDK_ROOT) SMALL=1
+
+$(WOLFBOOT_BIN):
+	cp target.h $(WOLFBOOT)/include
+	cp nrf52.ld $(WOLFBOOT)/hal
+	make -C $(WOLFBOOT) BOOT0_OFFSET=0x2f000 SWAP=0 VTOR=0 TARGET=nrf52 DEBUG=0 wolfboot.bin 
+
+nrf5_iot_sdk_3288530.zip:
+	wget https://developer.nordicsemi.com/nRF5_IoT_SDK/nRF5_IoT_SDK_v0.9.x/nrf5_iot_sdk_3288530.zip
+	unzip nrf5_iot_sdk_3288530.zip -d ./nrf5x-softdevice
+
+clean:
+	make -C $(WOLFBOOT) clean
+	make -C ota-server clean
+	make -C $(DTLS_OTA) TARGET=nrf52dk NRF52_SDK_ROOT=$(NRF52_SDK_ROOT) clean
+	rm -f $(DTLS_OTA)/*.bin 
+	rm -f tags
+
+flash: $(BOOT_ELF) $(WOLFBOOT_BIN)
+	$(WOLFBOOT)/tools/ed25519/ed25519_sign $(BOOT_IMG) $(WOLFBOOT)/ed25519.der 1
+	mv $(BOOT_IMG).v1.signed $(DTLS_OTA)/dtls-ota-signed.bin
+	JLinkExe $(JLINK_OPTS) -CommanderScript flash_all.jlink 
+
+erase:
+	JLinkExe $(JLINK_OPTS) -CommanderScript flash_erase.jlink 
+
+gdbserver:
+	JLinkGDBServer -device nrf52 -if swd -port 3333
