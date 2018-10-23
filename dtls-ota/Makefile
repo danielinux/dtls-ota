@@ -18,8 +18,8 @@ all: $(CONTIKI_PROJECT)
 
 APPS=wolfssl
 
-PROJECT_SOURCEFILES += cert.c run.c nrf52.c
+PROJECT_SOURCEFILES += cert.c nrf52.c bootutil_misc.c
 
 include $(CONTIKI)/Makefile.include
-vpath %c ../wolfBoot/src
 vpath %c ../wolfBoot/hal
+vpath %c ../wolfBoot/lib/bootutil/src

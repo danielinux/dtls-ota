@@ -28,8 +28,9 @@
 #include "uip-debug.h"
 
 /* wolfboot includes */
-#include "flash_map.h"
+#include "flash.h"
 #include "target.h"
+#include "bootutil.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -174,6 +175,10 @@ PROCESS_THREAD(dtls_client_process, ev, data)
                 printf("RECV: %lu/%lu\r\n", offset, tot_len);
             }
         } while (ret <= 0);
+    }
+    if (offset == tot_len) {
+        printf("Firmware transferred. Triggering upgrade. \r\n");
+        boot_set_pending(1);
     }
 
 cleanup:
