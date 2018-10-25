@@ -43,12 +43,6 @@
 *.pdb
 *.gdb
 
-# automatically generated keys
-*.der
-*.pem
-
-# automatically generated source files
-src/ed25519_pub_key.c
 
 # Vim swap files
 .*.swp

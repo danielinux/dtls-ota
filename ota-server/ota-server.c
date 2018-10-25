@@ -24,7 +24,6 @@
  * Utilizes DTLS 1.2.
  */
 
-#include <wolfssl/options.h>
 #include <stdio.h>                  /* standard in/out procedures */
 #include <stdlib.h>                 /* defines system calls */
 #include <string.h>                 /* necessary for memset */
@@ -64,9 +63,9 @@ int main(int argc, char** argv)
 {
     /* cont short for "continue?", Loc short for "location" */
     int         cont = 0;
-    char        caCertLoc[] = "../dtls-ota/server-ecc.pem";
-//    char        servCertLoc[] = "../dtls-ota/server-ecc.pem";
-    char        servKeyLoc[] = "../dtls-ota/ecc-key.pem";
+    char        caCertLoc[] = "./server-ecc.pem";
+    char        servCertLoc[] = "./server-ecc.pem";
+    char        servKeyLoc[] = "./ecc-key.pem";
     WOLFSSL_CTX* ctx;
     /* Variables for awaiting datagram */
     int           on = 1;
@@ -81,14 +80,6 @@ int main(int argc, char** argv)
     int           ffd; /* Firmware file descriptor */
     struct stat   st;
     struct ota_ack ack;
-
-    
-    /* Code for handling signals */
-    struct sigaction act, oact;
-    act.sa_handler = sig_handler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-    sigaction(SIGINT, &act, &oact);
 
     if (argc != 2) {
         printf("Usage: %s firmware_filename\n", argv[0]);
@@ -109,7 +100,7 @@ int main(int argc, char** argv)
     tot_len = st.st_size;
 
     /* "./config --enable-debug" and uncomment next line for debugging */
-    /* wolfSSL_Debugging_ON(); */
+    wolfSSL_Debugging_ON();
 
     /* Initialize wolfSSL */
     wolfSSL_Init();
@@ -119,6 +110,8 @@ int main(int argc, char** argv)
         printf("wolfSSL_CTX_new error.\n");
         return 1;
     }
+    wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);
+
     /* Load CA certificates */
     if (wolfSSL_CTX_load_verify_locations(ctx,caCertLoc,0) !=
             SSL_SUCCESS) {
@@ -126,13 +119,11 @@ int main(int argc, char** argv)
         return 1;
     }
     /* Load server certificates */
-#if 0
     if (wolfSSL_CTX_use_certificate_file(ctx, servCertLoc, SSL_FILETYPE_PEM) != 
                                                                  SSL_SUCCESS) {
         printf("Error loading %s, please check the file.\n", servCertLoc);
         return 1;
     }
-#endif
     /* Load server Keys */
     if (wolfSSL_CTX_use_PrivateKey_file(ctx, servKeyLoc,
                 SSL_FILETYPE_PEM) != SSL_SUCCESS) {
@@ -203,6 +194,7 @@ int main(int argc, char** argv)
             cleanup = 1;
             cont = 1;
         }
+	wolfSSL_dtls_set_timeout_init(ssl, 12);
 
         /* set the session ssl to client connection port */
         wolfSSL_set_fd(ssl, listenfd);
