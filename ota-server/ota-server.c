@@ -209,6 +209,7 @@ int main(int argc, char** argv)
         len = 0;
         lseek(ffd, 0, SEEK_SET); 
         res = wolfSSL_write(ssl, &tot_len, sizeof(uint32_t));
+	printf("Sent image file size (%d)\n", tot_len);
         while (len < tot_len) {
             res = wolfSSL_read(ssl, &ack, sizeof(ack));
             if (res < 0) {
@@ -224,19 +225,20 @@ int main(int argc, char** argv)
                 cleanup = 1;
                 break;
             }
-            if (ack.offset < len) {
+            if (ack.offset != len) {
+                printf("buf rewind %u\n", ack.offset);
                 lseek(ffd, ack.offset, SEEK_SET); 
                 len = ack.offset;
             }
-            memcpy(buff, &len, sizeof(len));
             res = read(ffd, buff + sizeof(uint32_t), MSGLEN - sizeof(uint32_t));
+            memcpy(buff, &len, sizeof(len));
             if (res < 0) {
                 printf("EOF\r\n");
                 cleanup = 1;
                 break;
             }
             sent = wolfSSL_write(ssl, buff, res + sizeof(uint32_t));
-            if (sent == res)
+            if (sent > 0)
                 len += MSGLEN - sizeof(uint32_t);
             printf("Sent bytes: %d/%d                  \r", len, tot_len);
             fflush(stdout);

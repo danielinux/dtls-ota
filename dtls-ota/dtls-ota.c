@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <nrf_soc.h>
 
 #define SERVER_PORT 11111
 #define FLASH_AREA_IMAGE_1 2
@@ -87,6 +88,7 @@ PROCESS_THREAD(dtls_client_process, ev, data)
     static struct ota_ack ack;
     static uint32_t tot_len = 0;
     static uint32_t offset = 0;
+    static uint32_t addr = 0;
     static const struct flash_area *fap;
 
     uip_ip6addr(&ipaddr, UIP_DS6_DEFAULT_PREFIX, 0, 0, 0, 0, 0, 0, 0);
@@ -167,7 +169,8 @@ PROCESS_THREAD(dtls_client_process, ev, data)
         printf("Cannot open flash partition\r\n");
         goto cleanup;
     }
-    flash_area_erase(fap, 0, tot_len);
+    for (addr = fap->fa_off; addr < (fap->fa_off + tot_len); addr += 4096)
+        sd_flash_page_erase(addr / 4096);
     printf("Erase complete. Start flashing\n");
     etimer_set(&et, 1 * CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
@@ -178,6 +181,12 @@ PROCESS_THREAD(dtls_client_process, ev, data)
         ack.error = 0;
         ack.offset = offset;
         do {
+            etimer_set(&et, 10 * CLOCK_SECOND);
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et) || (sk->ssl_rb_len > sk->ssl_rb_off));
+            if (etimer_expired(&et)) {
+                printf("Timeout error while receiving firmware. Update failed.\n");
+                goto cleanup;
+            }
             ret = wolfSSL_read(sk->ssl, buf, MSGLEN);
             if (ret <= 0) {
                 printf("wolfSSL_read returned %d\r\n", ret);
@@ -186,8 +195,8 @@ PROCESS_THREAD(dtls_client_process, ev, data)
             if (*server_offset != offset) {
                 wolfSSL_write(sk->ssl, &ack, sizeof(ack));
             } else {
-                flash_area_write(fap, offset, buf + sizeof(uint32_t), ret);
-                offset += ret;
+                flash_area_write(fap, offset, buf + sizeof(uint32_t), ret - sizeof(uint32_t));
+                offset += ret - sizeof(uint32_t);
                 ack.offset = offset;
                 wolfSSL_write(sk->ssl, &ack, sizeof(ack));
                 printf("RECV: %lu/%lu\r\n", offset, tot_len);
