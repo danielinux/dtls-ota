@@ -1,4 +1,6 @@
-/* server-dtls.c
+/* ota-server.c
+ *
+ * based on dtls-server.c from wolfssl-examples repository.
  *
  * Copyright (C) 2006-2015 wolfSSL Inc.
  *
@@ -20,8 +22,8 @@
  *
  *=============================================================================
  *
- * Bare-bones example of a DTLS server for instructional/learning purposes.
- * Utilizes DTLS 1.2.
+ * OTA Upgrade mechanism implemented using DTLS 1.2
+ *
  */
 
 #include <stdio.h>                  /* standard in/out procedures */

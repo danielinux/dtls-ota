@@ -1,10 +1,8 @@
 /*
- * **** This file incorporates work covered by the following copyright and ****
- * **** permission notice:                                                 ****
+ * DTLS-OTA
+ * Firmware upgrade over DTLS/IPv6/6LoWPAN/BLE
  *
- * Copyright (C) 2006-2018 wolfSSL Inc.
- *
- * This file is part of wolfSSL.
+ * Copyright (C) 2018 wolfSSL Inc.
  *
  * wolfSSL is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
