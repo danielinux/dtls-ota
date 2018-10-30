@@ -8,7 +8,7 @@ BOOT_ELF:=$(DTLS_OTA)/dtls-ota.nrf52dk
 WOLFBOOT:=$(PWD)/wolfBoot
 WOLFBOOT_BIN:=$(WOLFBOOT)/wolfboot.bin
 
-all: $(BOOT_ELF)
+all: $(DTLS_OTA)/dtls-ota-signed.bin
 
 .contiki_patched:
 	patch -p0 < contiki-nrf52-softdevice-wolfBoot.patch
@@ -32,10 +32,14 @@ clean:
 	make -C $(DTLS_OTA) TARGET=nrf52dk NRF52_SDK_ROOT=$(NRF52_SDK_ROOT) clean
 	rm -f $(DTLS_OTA)/*.bin 
 	rm -f tags
-
-flash: $(BOOT_ELF) $(WOLFBOOT_BIN)
+	
+$(BOOT_IMG).v1.signed: $(BOOT_ELF)
 	$(WOLFBOOT)/tools/ed25519/ed25519_sign $(BOOT_IMG) $(WOLFBOOT)/ed25519.der 1
-	mv $(BOOT_IMG).v1.signed $(DTLS_OTA)/dtls-ota-signed.bin
+
+$(DTLS_OTA)/dtls-ota-signed.bin: $(BOOT_IMG).v1.signed
+	mv $^ $@
+
+flash: $(BOOT_ELF) $(WOLFBOOT_BIN) $(DTLS_OTA)/dtls-ota-signed.bin
 	JLinkExe $(JLINK_OPTS) -CommanderScript flash_all.jlink 
 
 erase:
