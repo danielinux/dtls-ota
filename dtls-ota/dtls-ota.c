@@ -28,9 +28,9 @@
 
 
 /* wolfboot includes */
-#include "flash.h"
+#include "wolfboot/wolfboot.h"
 #include "target.h"
-#include "bootutil.h"
+#include "hal.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,22 +90,13 @@ PROCESS_THREAD(dtls_client_process, ev, data)
     static uint32_t tot_len = 0;
     static uint32_t offset = 0;
     static uint32_t addr = 0;
-    static const struct flash_area *fap;
+
 
     uip_ip6addr(&ipaddr, UIP_DS6_DEFAULT_PREFIX, 0, 0, 0, 0, 0, 0, 0);
     uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
     uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
 
     printf("OTA BLE Firmware upgrade, powered by Contiki + WolfSSL.\n");
-    ret = flash_area_open(FLASH_AREA_IMAGE_0, &fap);
-    if (ret != 0) {
-        printf("Cannot open flash partition\r\n");
-        goto cleanup;
-    }
-    printf("This firmware build: %lu\n", flash_area_get_image_buildnum(fap)); 
-    flash_area_close(fap);
-
-
     print_local_addresses();
 
 
@@ -138,6 +129,8 @@ PROCESS_THREAD(dtls_client_process, ev, data)
     uip_ip6addr(&server, 0xfd00, 0xa, 0, 0, 0, 0, 0, 1);
 #endif
     dtls_set_endpoint(sk, &server, SERVER_PORT);
+    
+    wolfBoot_success();
     printf("connecting to server...\n");
     do {
         ret = wolfSSL_connect(sk->ssl);
@@ -164,7 +157,7 @@ PROCESS_THREAD(dtls_client_process, ev, data)
         }
     } while (ret <= 0);
 
-    if ((tot_len < 256) || (tot_len > FLASH_AREA_IMAGE_1_SIZE)) {
+    if ((tot_len < 256) || (tot_len > WOLFBOOT_PARTITION_SIZE)) {
         printf("Wrong firmware size received: %lu\r\n", tot_len);
         ack.error = 1;
         ack.offset = 0;
@@ -172,13 +165,8 @@ PROCESS_THREAD(dtls_client_process, ev, data)
         goto cleanup;
     }
     printf("Firmware size: %lu\n", tot_len);
-    ret = flash_area_open(FLASH_AREA_IMAGE_1, &fap);
-    if (ret != 0) {
-        printf("Cannot open flash partition\r\n");
-        goto cleanup;
-    }
-    for (addr = fap->fa_off; addr < (fap->fa_off + tot_len); addr += 4096)
-        sd_flash_page_erase(addr / 4096);
+    for (addr = 0; addr < WOLFBOOT_PARTITION_SIZE; addr += 4096)
+        sd_flash_page_erase((WOLFBOOT_PARTITION_UPDATE_ADDRESS + addr) / 4096);
     printf("Erase complete. Start flashing\n");
     ack.offset = offset;
     wolfSSL_write(sk->ssl, &ack, sizeof(ack));
@@ -202,7 +190,7 @@ PROCESS_THREAD(dtls_client_process, ev, data)
             } else {
                 ack.offset = offset + ret - sizeof(uint32_t);
                 wolfSSL_write(sk->ssl, &ack, sizeof(ack));
-                flash_area_write(fap, offset, buf + sizeof(uint32_t), ret - sizeof(uint32_t));
+                hal_flash_write(WOLFBOOT_PARTITION_UPDATE_ADDRESS + offset, buf + sizeof(uint32_t), ret - sizeof(uint32_t));
                 offset += ret - sizeof(uint32_t);
                 printf("RECV: %lu/%lu\r\n", offset, tot_len);
             }
@@ -212,7 +200,7 @@ PROCESS_THREAD(dtls_client_process, ev, data)
         printf("Closing connection.\r\n");
         printf("Transfer complete. Triggering wolfBoot upgrade.\r\n");
         dtls_socket_close(sk);
-        boot_set_pending(1);
+        wolfBoot_update_trigger();
         printf("Rebooting...\n");
         etimer_set(&et, 1 * CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));

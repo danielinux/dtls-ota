@@ -20,7 +20,7 @@ $(BOOT_ELF): nrf5_iot_sdk_3288530.zip $(WOLFBOOT_BIN) .contiki_patched
 $(WOLFBOOT_BIN):
 	cp target.h $(WOLFBOOT)/include
 	cp nrf52.ld $(WOLFBOOT)/hal
-	make -C $(WOLFBOOT) BOOT0_OFFSET=0x2f000 SWAP=0 VTOR=0 TARGET=nrf52 DEBUG=0 wolfboot.bin 
+	make -C $(WOLFBOOT) BOOT0_OFFSET=0x10000 VTOR=0 TARGET=nrf52 DEBUG=0 wolfboot.bin 
 
 nrf5_iot_sdk_3288530.zip:
 	wget https://developer.nordicsemi.com/nRF5_IoT_SDK/nRF5_IoT_SDK_v0.9.x/nrf5_iot_sdk_3288530.zip
