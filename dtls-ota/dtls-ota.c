@@ -96,7 +96,7 @@ PROCESS_THREAD(dtls_client_process, ev, data)
     uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
     uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
 
-    printf("OTA BLE Firmware upgrade, powered by Contiki + WolfSSL.\n");
+    printf("OTA BLE Firmware upgrade, powered by Contiki + WolfSSL + wolfBoot.\n");
     print_local_addresses();
 
 
@@ -205,6 +205,7 @@ PROCESS_THREAD(dtls_client_process, ev, data)
         etimer_set(&et, 1 * CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
         sd_nvic_SystemReset();
+
         while(1)
             ; /* Wait for reboot */
     }

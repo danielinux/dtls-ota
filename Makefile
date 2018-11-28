@@ -39,6 +39,14 @@ $(BOOT_IMG).v1.signed: $(BOOT_ELF)
 $(DTLS_OTA)/dtls-ota-signed.bin: $(BOOT_IMG).v1.signed
 	mv $^ $@
 
+$(DTLS_OTA)/dtls-ota-force-update.bin: $(DTLS_OTA)/dtls-ota-signed.bin
+	$(OBJCOPY) -I binary -O binary $^ tmp.bin --pad-to=0x27FFB --gap-fill=255
+	cat tmp.bin force-update > $@
+	rm tmp.bin
+
+flash-update: $(DTLS_OTA)/dtls-ota-force-update.bin
+	JLinkExe $(JLINK_OPTS) -CommanderScript flash_update.jlink 
+
 flash: $(BOOT_ELF) $(WOLFBOOT_BIN) $(DTLS_OTA)/dtls-ota-signed.bin
 	JLinkExe $(JLINK_OPTS) -CommanderScript flash_all.jlink 
 
